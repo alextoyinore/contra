@@ -17,6 +17,8 @@ export default function PostScheduler({ onAddPost, channels = [] }) {
   const linkedinName = linkedinChannel?.handle || 'Your Page';
   const twitterInitials = twitterName.slice(0, 2).toUpperCase();
   const linkedinInitials = linkedinName.slice(0, 2).toUpperCase();
+  const twitterAvatar = twitterChannel?.avatar_url;
+  const linkedinAvatar = linkedinChannel?.avatar_url;
   const { addToast } = useToast();
   const [content, setContent] = useState('');
   const [selectedPlatforms, setSelectedPlatforms] = useState(['twitter']);
@@ -406,9 +408,17 @@ export default function PostScheduler({ onAddPost, channels = [] }) {
               >
                 {/* Header Profile */}
                 <div className="flex gap-8" style={{ marginBottom: '8px' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'var(--primary-green-light)', border: '1px solid var(--primary-green)', display: 'grid', placeContent: 'center', fontWeight: 'bold', fontSize: '12px', color: 'var(--text-green)' }}>
-                    {twitterInitials}
-                  </div>
+                  {twitterAvatar ? (
+                    <img 
+                      src={twitterAvatar} 
+                      alt={twitterName} 
+                      style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }} 
+                    />
+                  ) : (
+                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'var(--primary-green-light)', border: '1px solid var(--primary-green)', display: 'grid', placeContent: 'center', fontWeight: 'bold', fontSize: '12px', color: 'var(--text-green)' }}>
+                      {twitterInitials}
+                    </div>
+                  )}
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <span style={{ fontWeight: 600, fontSize: '13px' }}>{twitterName}</span>
@@ -450,9 +460,17 @@ export default function PostScheduler({ onAddPost, channels = [] }) {
               >
                 {/* Header Profile */}
                 <div className="flex gap-8" style={{ marginBottom: '12px' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '4px', backgroundColor: 'var(--primary-green-light)', border: '1px solid var(--primary-green)', display: 'grid', placeContent: 'center', fontWeight: 'bold', fontSize: '14px', color: 'var(--text-green)' }}>
-                    {linkedinInitials}
-                  </div>
+                  {linkedinAvatar ? (
+                    <img 
+                      src={linkedinAvatar} 
+                      alt={linkedinName} 
+                      style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover', border: '1px solid var(--border-color)' }} 
+                    />
+                  ) : (
+                    <div style={{ width: '40px', height: '40px', borderRadius: '4px', backgroundColor: 'var(--primary-green-light)', border: '1px solid var(--primary-green)', display: 'grid', placeContent: 'center', fontWeight: 'bold', fontSize: '14px', color: 'var(--text-green)' }}>
+                      {linkedinInitials}
+                    </div>
+                  )}
                   <div>
                     <div style={{ fontWeight: 600, fontSize: '13px' }}>{linkedinName}</div>
                     <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{linkedinChannel?.followers ? `${linkedinChannel.followers.toLocaleString()} followers` : 'LinkedIn Page'}</div>

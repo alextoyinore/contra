@@ -42,7 +42,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
       <div className="sidebar-brand">
         <div className="sidebar-logo">
           <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <rect width="24" height="24" rx="6" fill="var(--primary-green)" />
+            <circle cx="12" cy="12" r="12" fill="var(--primary-green)" />
             <text
               x="12" y="17.5"
               fontFamily="'Inter', 'Helvetica Neue', Arial, sans-serif"

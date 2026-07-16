@@ -21,11 +21,13 @@ export default function ChannelConnections({ channels, onToggleChannel }) {
   
   // Modals / Dialogs states
   const [authModal, setAuthModal] = useState(null); // { id, name, type }
+  const [editModal, setEditModal] = useState(null); // { id, name, type }
   const [disconnectConfirm, setDisconnectConfirm] = useState(null); // { id, name, type }
   const [testingChannelId, setTestingChannelId] = useState(null);
   
   // Form input inside OAuth simulator
   const [handleInput, setHandleInput] = useState('');
+  const [avatarInput, setAvatarInput] = useState('');
   
   // OAuth step tracking
   const [oauthStep, setOauthStep] = useState(0); // 0: Consent, 1: Connecting, 2: Done
@@ -52,8 +54,23 @@ export default function ChannelConnections({ channels, onToggleChannel }) {
   const openAuthModal = (channel) => {
     setAuthModal(channel);
     setHandleInput('');
+    setAvatarInput('');
     setOauthStep(0);
     setOauthLogs([]);
+  };
+
+  const openEditModal = (channel) => {
+    setEditModal(channel);
+    setHandleInput(channel.handle || '');
+    setAvatarInput(channel.avatar_url || '');
+  };
+
+  const handleEditSave = (e) => {
+    e.preventDefault();
+    if (!handleInput.trim()) return;
+    onToggleChannel(editModal.id, true, handleInput.trim(), avatarInput.trim() || null);
+    setEditModal(null);
+    addToast('Profile updated', 'success');
   };
 
   // Run Simulated/Real OAuth Handshake sequence
@@ -96,7 +113,7 @@ export default function ChannelConnections({ channels, onToggleChannel }) {
         if (index === logs.length - 1) {
           // Finished all steps
           setTimeout(() => {
-            onToggleChannel(authModal.id, true, handleInput.trim());
+            onToggleChannel(authModal.id, true, handleInput.trim(), avatarInput.trim() || null);
             setAuthModal(null);
           }, 800);
         }
@@ -229,6 +246,14 @@ export default function ChannelConnections({ channels, onToggleChannel }) {
                       <RefreshCw size={10} className={testingChannelId === ch.id ? 'spinner' : ''} />
                       {testingChannelId === ch.id ? 'Testing...' : 'Test Connection'}
                     </button>
+
+                    <button
+                      onClick={() => openEditModal(ch)}
+                      className="btn btn-secondary"
+                      style={{ height: '24px', padding: '0 8px', fontSize: '11px', gap: '4px' }}
+                    >
+                      Edit Profile
+                    </button>
                     
                     <button
                       onClick={() => toggleDiagnostics(ch.id)}
@@ -328,7 +353,7 @@ export default function ChannelConnections({ channels, onToggleChannel }) {
                     }}
                   >
                     {/* Contra Icon */}
-                    <div style={{ width: '36px', height: '36px', borderRadius: '6px', backgroundColor: 'var(--primary-green)', display: 'grid', placeContent: 'center', fontWeight: 'bold', fontSize: '18px', color: '#000' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'var(--primary-green)', display: 'grid', placeContent: 'center', fontWeight: 'bold', fontSize: '18px', color: '#000' }}>
                       C
                     </div>
                     <span className="text-muted" style={{ fontSize: '18px' }}>↔</span>
@@ -352,6 +377,17 @@ export default function ChannelConnections({ channels, onToggleChannel }) {
                       onChange={(e) => setHandleInput(e.target.value)}
                       className="form-input"
                       autoFocus
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginTop: '12px' }}>
+                    <label className="form-label">Profile Image URL (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="https://images.unsplash.com/... or leave blank for default"
+                      value={avatarInput}
+                      onChange={(e) => setAvatarInput(e.target.value)}
+                      className="form-input"
                     />
                   </div>
                 </div>
@@ -403,6 +439,80 @@ export default function ChannelConnections({ channels, onToggleChannel }) {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Profile Edit Modal */}
+      {editModal && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0, 
+            backgroundColor: 'rgba(0,0,0,0.7)', 
+            display: 'grid', 
+            placeContent: 'center', 
+            zIndex: 99999,
+            backdropFilter: 'blur(2px)'
+          }}
+        >
+          <div className="panel" style={{ width: '420px', maxWidth: '90vw' }}>
+            <div className="panel-header">
+              <span className="panel-title flex align-center gap-8">
+                {getPlatformIcon(editModal.type, 18)}
+                Edit {editModal.name} Profile
+              </span>
+              <button 
+                onClick={() => setEditModal(null)} 
+                className="btn btn-secondary btn-icon"
+                style={{ width: '24px', height: '24px', border: 'none' }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSave}>
+              <div className="panel-body">
+                <div className="form-group">
+                  <label className="form-label">Account Handle / Username</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder={editModal.type === 'twitter' ? '@username' : 'username'}
+                    value={handleInput}
+                    onChange={(e) => setHandleInput(e.target.value)}
+                    className="form-input"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginTop: '12px' }}>
+                  <label className="form-label">Profile Image URL</label>
+                  <input
+                    type="text"
+                    placeholder="https://images.unsplash.com/... or leave blank for initials fallback"
+                    value={avatarInput}
+                    onChange={(e) => setAvatarInput(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+              <div className="panel-footer">
+                <button 
+                  type="button" 
+                  onClick={() => setEditModal(null)} 
+                  className="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Save Changes
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

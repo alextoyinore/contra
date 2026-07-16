@@ -22,10 +22,10 @@ function MainApp() {
     const saved = localStorage.getItem('supabase-social-channels');
     if (saved) return JSON.parse(saved);
     return [
-      { id: '1', name: 'Twitter / X', type: 'twitter', connected: true, handle: '@contra_hq', followers: 12400 },
-      { id: '2', name: 'LinkedIn Page', type: 'linkedin', connected: true, handle: 'Contra', followers: 8200 },
-      { id: '3', name: 'Instagram Business', type: 'instagram', connected: false, handle: '', followers: 4200 },
-      { id: '4', name: 'Facebook Page', type: 'facebook', connected: false, handle: '', followers: 5800 },
+      { id: '1', name: 'Twitter / X', type: 'twitter', connected: true, handle: '@contra_hq', followers: 12400, avatar_url: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=100&q=80' },
+      { id: '2', name: 'LinkedIn Page', type: 'linkedin', connected: true, handle: 'Contra', followers: 8200, avatar_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=100&q=80' },
+      { id: '3', name: 'Instagram Business', type: 'instagram', connected: false, handle: '', followers: 4200, avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80' },
+      { id: '4', name: 'Facebook Page', type: 'facebook', connected: false, handle: '', followers: 5800, avatar_url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&q=80' },
     ];
   });
 
@@ -253,30 +253,44 @@ function MainApp() {
     const isTwitterPost = post && post.platforms && post.platforms.includes('twitter');
     const twitterConnected = channels.find(c => c.type === 'twitter')?.connected;
 
-    // If Supabase is connected and the post targets Twitter, call the Edge Function
-    if (isUsingSupabase && supabase && isTwitterPost && twitterConnected) {
-      addToast('Publishing...', 'info', 'Sending your post to Twitter.');
-      try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || localStorage.getItem('supabase-url');
-        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || localStorage.getItem('supabase-key');
 
-        const res = await fetch(`${supabaseUrl}/functions/v1/publish-post`, {
+    if (post.platforms.includes('twitter')) {
+      try {
+        const funcUrl = import.meta.env.VITE_SUPABASE_URL 
+          ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/publish-post`
+          : null;
+
+        if (!funcUrl) {
+          throw new Error('Supabase function URL not configured');
+        }
+
+        addToast('Publishing to Twitter...', 'info', 'Sending secure request to Edge Function');
+
+        // If it was a composer submit, we might not have saved it to DB yet
+        if (isUsingSupabase && supabase && postObject) {
+          await supabase.from('posts').insert([{
+            id: post.id,
+            content: post.content,
+            platforms: post.platforms,
+            media_url: post.media_url,
+            status: 'scheduled', // temporary
+            scheduled_at: post.scheduled_at
+          }]);
+        }
+
+        const res = await fetch(funcUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabaseKey}`,
-            'apikey': supabaseKey,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || localStorage.getItem('supabase-key')}`
           },
           body: JSON.stringify({ postId: id }),
         });
 
         const result = await res.json();
+        
+        if (!res.ok || result.error) throw new Error(result.error || 'Publishing failed');
 
-        if (!res.ok || result.error) {
-          throw new Error(result.error || 'Publishing failed');
-        }
-
-        // Update local state to reflect the published status
         setPosts(posts.map(p => p.id === id ? { ...p, status: 'published', scheduled_at: nowStr } : p));
         addToast('Post published! 🎉', 'success', 'Your tweet is now live on Twitter.');
       } catch (err) {
@@ -284,51 +298,69 @@ function MainApp() {
         addToast('Publish failed', 'error', err.message);
       }
     } else if (isUsingSupabase && supabase) {
-      // Non-Twitter platform or Twitter not connected — just update the DB status
       const { error } = await supabase.from('posts').update({ status: 'published', scheduled_at: nowStr }).eq('id', id);
       if (error) {
-        console.error(`Error publishing post ${id} in Supabase:`, error);
+        console.error(`Error updating post ${id} status in Supabase:`, error);
         addToast('Publish failed', 'error', error.message);
       } else {
         setPosts(posts.map(p => p.id === id ? { ...p, status: 'published', scheduled_at: nowStr } : p));
-        addToast('Post published', 'success', 'Status updated in Supabase.');
+        addToast('Post published', 'success');
       }
     } else {
-      // Demo / local mode
       setPosts(posts.map(p => p.id === id ? { ...p, status: 'published', scheduled_at: nowStr } : p));
+      addToast('Post published', 'success');
     }
   };
 
   const handleToggleChannel = async (id, connected, handle = '') => {
     let followers = 0;
+    let avatar_url = null;
     if (connected) {
       const chan = channels.find(c => c.id === id);
       const type = chan ? chan.type : '';
-      if (type === 'twitter') followers = 12400;
-      else if (type === 'linkedin') followers = 8200;
-      else if (type === 'instagram') followers = 4200;
-      else if (type === 'facebook') followers = 5800;
+      if (type === 'twitter') {
+        followers = 12400;
+        avatar_url = 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=100&q=80';
+      } else if (type === 'linkedin') {
+        followers = 8200;
+        avatar_url = 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=100&q=80';
+      } else if (type === 'instagram') {
+        followers = 4200;
+        avatar_url = 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80';
+      } else if (type === 'facebook') {
+        followers = 5800;
+        avatar_url = 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&q=80';
+      }
     }
 
     if (isUsingSupabase && supabase) {
-      let { error } = await supabase.from('channels').update({ connected, handle, followers }).eq('id', id);
+      // Try updating all columns first
+      let { error } = await supabase.from('channels').update({ connected, handle, followers, avatar_url }).eq('id', id);
       
-      // Graceful fallback: if followers column doesn't exist yet, retry without it
-      if (error && error.message && error.message.includes('followers')) {
-        console.warn("Followers column not present in DB, updating without it.");
-        const fallbackRes = await supabase.from('channels').update({ connected, handle }).eq('id', id);
-        error = fallbackRes.error;
+      // Fallback 1: if fails, retry without avatar_url
+      if (error) {
+        console.warn("Avatar update failed, retrying without avatar_url:", error.message);
+        let retry = await supabase.from('channels').update({ connected, handle, followers }).eq('id', id);
+        error = retry.error;
+
+        // Fallback 2: if still fails (e.g. followers column missing), retry with only base fields
+        if (error) {
+          console.warn("Followers update failed, retrying with only base fields:", error.message);
+          const baseRetry = await supabase.from('channels').update({ connected, handle }).eq('id', id);
+          error = baseRetry.error;
+        }
       }
 
       if (error) {
         console.error(`Error updating channel ${id} in Supabase:`, error);
         addToast('Channel update failed', 'error', error.message);
       } else {
-        setChannels(channels.map(c => c.id === id ? { ...c, connected, handle, followers } : c));
+        setChannels(channels.map(c => c.id === id ? { ...c, connected, handle, followers, avatar_url } : c));
         addToast(connected ? 'Channel linked' : 'Channel disconnected', 'success');
       }
     } else {
-      setChannels(channels.map(c => c.id === id ? { ...c, connected, handle, followers } : c));
+      setChannels(channels.map(c => c.id === id ? { ...c, connected, handle, followers, avatar_url } : c));
+      addToast(connected ? 'Channel linked' : 'Channel disconnected', 'success');
     }
   };
 
