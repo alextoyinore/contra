@@ -147,10 +147,8 @@ serve(async (req) => {
     }
 
     // 4. Redirect client dashboard back to success state
-    // Replace with your real client URL (e.g. localhost:5173 or production domain)
-    const clientRedirectUrl = url.origin.includes("localhost") 
-      ? "http://localhost:5173/?auth=success" 
-      : "https://your-contra-app.vercel.app/?auth=success";
+    const clientBaseUrl = Deno.env.get("CLIENT_URL") || "https://contrapp.vercel.app";
+    const clientRedirectUrl = `${clientBaseUrl}/?auth=success`;
 
     return Response.redirect(clientRedirectUrl, 307);
 
