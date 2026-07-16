@@ -159,6 +159,7 @@ export default function PostScheduler({ onAddPost, channels }) {
       status: publishImmediately ? 'published' : 'scheduled',
       scheduled_at: publishImmediately ? new Date().toISOString() : new Date(scheduledDate).toISOString(),
       created_at: new Date().toISOString(),
+      publishImmediately, // signal to App.jsx to call the Edge Function
     };
 
     onAddPost(newPost);
@@ -169,11 +170,10 @@ export default function PostScheduler({ onAddPost, channels }) {
     setImageUrl('');
     if (fileInputRef.current) fileInputRef.current.value = '';
 
-    addToast(
-      publishImmediately ? 'Published!' : 'Scheduled!',
-      'success',
-      publishImmediately ? 'Your post is live.' : `Goes live at ${new Date(scheduledDate).toLocaleString()}.`
-    );
+    if (!publishImmediately) {
+      addToast('Scheduled!', 'success', `Goes live at ${new Date(scheduledDate).toLocaleString()}.`);
+    }
+    // For publishImmediately, App.jsx handles the toast after the API call
   };
 
   // Find character limit of current platform in preview

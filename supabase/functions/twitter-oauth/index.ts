@@ -97,7 +97,7 @@ serve(async (req) => {
     
     // We update the channel to "connected" and save the token data into a separate private schema
     // or direct connection metadata column for security
-    const { error: dbError } = await supabaseAdmin
+    let { error: dbError } = await supabaseAdmin
       .from("channels")
       .update({ 
         connected: true, 
@@ -106,6 +106,20 @@ serve(async (req) => {
         updated_at: new Date().toISOString()
       })
       .eq("type", "twitter");
+
+    // Graceful fallback: if followers column doesn't exist yet, retry without it
+    if (dbError && dbError.message && dbError.message.includes('followers')) {
+      console.warn("Followers column not present in DB schema cache, updating without it.");
+      const fallbackRes = await supabaseAdmin
+        .from("channels")
+        .update({ 
+          connected: true, 
+          handle: twitterHandle,
+          updated_at: new Date().toISOString()
+        })
+        .eq("type", "twitter");
+      dbError = fallbackRes.error;
+    }
 
     if (dbError) {
       throw new Error(`Database save failed: ${dbError.message}`);

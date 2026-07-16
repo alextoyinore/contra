@@ -165,18 +165,55 @@ function MainApp() {
 
   // Handlers
   const handleAddPost = async (newPost) => {
+    const { publishImmediately, ...postData } = newPost;
+
     if (isUsingSupabase && supabase) {
-      const { data, error } = await supabase.from('posts').insert([newPost]).select();
+      const { data, error } = await supabase.from('posts').insert([postData]).select();
       if (error) {
         console.error('Error inserting post to Supabase:', error);
         addToast('Failed to save post', 'error', error.message);
       } else if (data && data[0]) {
-        setPosts([data[0], ...posts]);
-        addToast('Post scheduled', 'success', 'Saved to Supabase successfully.');
+        const savedPost = data[0];
+        setPosts([savedPost, ...posts]);
+
+        // If the user clicked "Publish Now" and Twitter is connected, call the Edge Function
+        const isTwitterPost = savedPost.platforms && savedPost.platforms.includes('twitter');
+        const twitterConnected = channels.find(c => c.type === 'twitter')?.connected;
+
+        if (publishImmediately && isTwitterPost && twitterConnected) {
+          addToast('Publishing to Twitter...', 'info', 'Sending your post live.');
+          try {
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || localStorage.getItem('supabase-url');
+            const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || localStorage.getItem('supabase-key');
+
+            const res = await fetch(`${supabaseUrl}/functions/v1/publish-post`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supabaseKey}`,
+                'apikey': supabaseKey,
+              },
+              body: JSON.stringify({ postId: savedPost.id }),
+            });
+
+            const result = await res.json();
+            if (!res.ok || result.error) throw new Error(result.error || 'Publishing failed');
+
+            setPosts(prev => prev.map(p => p.id === savedPost.id ? { ...p, status: 'published' } : p));
+            addToast('Post published! 🎉', 'success', 'Your tweet is now live on Twitter.');
+          } catch (err) {
+            console.error('Publish post error:', err);
+            addToast('Saved but publish failed', 'error', err.message);
+          }
+        } else if (publishImmediately) {
+          addToast('Published!', 'success', 'Post marked as live.');
+        } else {
+          addToast('Post scheduled', 'success', 'Saved to Supabase successfully.');
+        }
       }
     } else {
-      setPosts([newPost, ...posts]);
-      addToast('Post added', 'success', 'Saved locally (Demo Mode).');
+      setPosts([postData, ...posts]);
+      addToast(publishImmediately ? 'Published! (Demo)' : 'Post added', 'success', 'Saved locally (Demo Mode).');
     }
   };
 
@@ -197,7 +234,42 @@ function MainApp() {
 
   const handlePublishPost = async (id) => {
     const nowStr = new Date().toISOString();
-    if (isUsingSupabase && supabase) {
+    const post = posts.find(p => p.id === id);
+    const isTwitterPost = post && post.platforms && post.platforms.includes('twitter');
+    const twitterConnected = channels.find(c => c.type === 'twitter')?.connected;
+
+    // If Supabase is connected and the post targets Twitter, call the Edge Function
+    if (isUsingSupabase && supabase && isTwitterPost && twitterConnected) {
+      addToast('Publishing...', 'info', 'Sending your post to Twitter.');
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || localStorage.getItem('supabase-url');
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || localStorage.getItem('supabase-key');
+
+        const res = await fetch(`${supabaseUrl}/functions/v1/publish-post`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseKey}`,
+            'apikey': supabaseKey,
+          },
+          body: JSON.stringify({ postId: id }),
+        });
+
+        const result = await res.json();
+
+        if (!res.ok || result.error) {
+          throw new Error(result.error || 'Publishing failed');
+        }
+
+        // Update local state to reflect the published status
+        setPosts(posts.map(p => p.id === id ? { ...p, status: 'published', scheduled_at: nowStr } : p));
+        addToast('Post published! 🎉', 'success', 'Your tweet is now live on Twitter.');
+      } catch (err) {
+        console.error('Publish post error:', err);
+        addToast('Publish failed', 'error', err.message);
+      }
+    } else if (isUsingSupabase && supabase) {
+      // Non-Twitter platform or Twitter not connected — just update the DB status
       const { error } = await supabase.from('posts').update({ status: 'published', scheduled_at: nowStr }).eq('id', id);
       if (error) {
         console.error(`Error publishing post ${id} in Supabase:`, error);
@@ -207,6 +279,7 @@ function MainApp() {
         addToast('Post published', 'success', 'Status updated in Supabase.');
       }
     } else {
+      // Demo / local mode
       setPosts(posts.map(p => p.id === id ? { ...p, status: 'published', scheduled_at: nowStr } : p));
     }
   };
