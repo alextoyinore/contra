@@ -126,16 +126,25 @@ serve(async (req) => {
     }
 
     // Create a secure credentials store inside your vault or credentials table
-    // (Ensure you run 'CREATE TABLE IF NOT EXISTS oauth_tokens (channel_type TEXT PRIMARY KEY, access_token TEXT, refresh_token TEXT, expires_at TIMESTAMPTZ);')
     const expiresAt = new Date(Date.now() + expires_in * 1000).toISOString();
-    await supabaseAdmin
+    const { error: tokenSaveError } = await supabaseAdmin
       .from("oauth_tokens")
       .upsert({
         channel_type: "twitter",
         access_token,
         refresh_token,
-        expires_at: expiresAt
+        expires_at: expiresAt,
+        updated_at: new Date().toISOString()
       });
+
+    if (tokenSaveError) {
+      // Surface a clear error — the oauth_tokens table likely doesn't exist yet
+      throw new Error(
+        `Failed to save OAuth tokens: ${tokenSaveError.message}. ` +
+        `Make sure you have created the oauth_tokens table in your Supabase SQL Editor. ` +
+        `Run: CREATE TABLE IF NOT EXISTS oauth_tokens (channel_type TEXT PRIMARY KEY, access_token TEXT NOT NULL, refresh_token TEXT NOT NULL, expires_at TIMESTAMPTZ NOT NULL, updated_at TIMESTAMPTZ DEFAULT now());`
+      );
+    }
 
     // 4. Redirect client dashboard back to success state
     // Replace with your real client URL (e.g. localhost:5173 or production domain)

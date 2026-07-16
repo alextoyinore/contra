@@ -9,7 +9,14 @@ import {
 import { Twitter, Linkedin, Instagram, Facebook } from './SocialIcons';
 import { useToast } from '../context/ToastContext';
 
-export default function PostScheduler({ onAddPost, channels }) {
+export default function PostScheduler({ onAddPost, channels = [] }) {
+  const twitterChannel = channels.find(c => c.type === 'twitter');
+  const linkedinChannel = channels.find(c => c.type === 'linkedin');
+  const twitterHandle = twitterChannel?.handle || '@yourhandle';
+  const twitterName = twitterHandle.startsWith('@') ? twitterHandle.slice(1) : twitterHandle;
+  const linkedinName = linkedinChannel?.handle || 'Your Page';
+  const twitterInitials = twitterName.slice(0, 2).toUpperCase();
+  const linkedinInitials = linkedinName.slice(0, 2).toUpperCase();
   const { addToast } = useToast();
   const [content, setContent] = useState('');
   const [selectedPlatforms, setSelectedPlatforms] = useState(['twitter']);
@@ -400,12 +407,12 @@ export default function PostScheduler({ onAddPost, channels }) {
                 {/* Header Profile */}
                 <div className="flex gap-8" style={{ marginBottom: '8px' }}>
                   <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'var(--primary-green-light)', border: '1px solid var(--primary-green)', display: 'grid', placeContent: 'center', fontWeight: 'bold', fontSize: '12px', color: 'var(--text-green)' }}>
-                    SS
+                    {twitterInitials}
                   </div>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ fontWeight: 600, fontSize: '13px' }}>Contra</span>
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>@contra_hq</span>
+                      <span style={{ fontWeight: 600, fontSize: '13px' }}>{twitterName}</span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{twitterHandle}</span>
                     </div>
                     <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Just now</span>
                   </div>
@@ -444,11 +451,11 @@ export default function PostScheduler({ onAddPost, channels }) {
                 {/* Header Profile */}
                 <div className="flex gap-8" style={{ marginBottom: '12px' }}>
                   <div style={{ width: '40px', height: '40px', borderRadius: '4px', backgroundColor: 'var(--primary-green-light)', border: '1px solid var(--primary-green)', display: 'grid', placeContent: 'center', fontWeight: 'bold', fontSize: '14px', color: 'var(--text-green)' }}>
-                    SS
+                    {linkedinInitials}
                   </div>
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: '13px' }}>Contra</div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>24,810 followers</div>
+                    <div style={{ fontWeight: 600, fontSize: '13px' }}>{linkedinName}</div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{linkedinChannel?.followers ? `${linkedinChannel.followers.toLocaleString()} followers` : 'LinkedIn Page'}</div>
                     <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Just now • 🌐</div>
                   </div>
                 </div>
