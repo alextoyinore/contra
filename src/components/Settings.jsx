@@ -330,8 +330,18 @@ CREATE TABLE IF NOT EXISTS channels (
   type TEXT NOT NULL,
   connected BOOLEAN DEFAULT false,
   handle TEXT DEFAULT '',
+  followers INTEGER DEFAULT 0,
   updated_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- migration: add followers column if it doesn't exist
+ALTER TABLE channels ADD COLUMN IF NOT EXISTS followers INTEGER DEFAULT 0;
+
+-- Update existing channels with some default followers if they are connected
+UPDATE channels SET followers = 12400 WHERE type = 'twitter' AND connected = true AND (followers IS NULL OR followers = 0);
+UPDATE channels SET followers = 8200 WHERE type = 'linkedin' AND connected = true AND (followers IS NULL OR followers = 0);
+UPDATE channels SET followers = 4200 WHERE type = 'instagram' AND connected = true AND (followers IS NULL OR followers = 0);
+UPDATE channels SET followers = 5800 WHERE type = 'facebook' AND connected = true AND (followers IS NULL OR followers = 0);
 
 -- posts table
 CREATE TABLE IF NOT EXISTS posts (

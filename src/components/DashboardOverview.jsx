@@ -16,6 +16,36 @@ export default function DashboardOverview({ posts, channels, setActiveTab }) {
   const totalPublished = posts.filter(p => p.status === 'published').length;
   const activeChannels = channels.filter(c => c.connected).length;
   
+  // Calculate dynamic reach based on connected channels
+  const getDefaultFollowers = (type) => {
+    switch (type) {
+      case 'twitter': return 12400;
+      case 'linkedin': return 8200;
+      case 'instagram': return 4200;
+      case 'facebook': return 5800;
+      default: return 0;
+    }
+  };
+
+  const totalReach = channels
+    .filter(c => c.connected)
+    .reduce((sum, c) => {
+      const count = (c.followers !== undefined && c.followers !== null && c.followers > 0)
+        ? c.followers
+        : getDefaultFollowers(c.type);
+      return sum + count;
+    }, 0);
+
+  const formatReach = (num) => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    }
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    }
+    return num.toString();
+  };
+
   // Quick channels lookup
   const getChannelIcon = (type) => {
     switch (type) {
@@ -86,7 +116,7 @@ export default function DashboardOverview({ posts, channels, setActiveTab }) {
             <span className="stat-label">Total Reach</span>
             <Users size={16} className="text-muted" />
           </div>
-          <span className="stat-value">24.8K</span>
+          <span className="stat-value">{formatReach(totalReach)}</span>
           <span className="stat-trend up">
             <ArrowUpRight size={12} />
             +14.2% vs last month

@@ -72,17 +72,23 @@ serve(async (req) => {
     const { access_token, refresh_token, expires_in } = tokenData;
 
     // 2. Fetch authenticated user details from Twitter using the new token
-    const userRes = await fetch("https://api.twitter.com/2/users/me", {
+    const userRes = await fetch("https://api.twitter.com/2/users/me?user.fields=public_metrics", {
       headers: {
         Authorization: `Bearer ${access_token}`
       }
     });
 
     let twitterHandle = "@twitter_user";
+    let followersCount = 0;
     if (userRes.ok) {
       const userData = await userRes.json();
-      if (userData.data && userData.data.username) {
-        twitterHandle = `@${userData.data.username}`;
+      if (userData.data) {
+        if (userData.data.username) {
+          twitterHandle = `@${userData.data.username}`;
+        }
+        if (userData.data.public_metrics && typeof userData.data.public_metrics.followers_count === 'number') {
+          followersCount = userData.data.public_metrics.followers_count;
+        }
       }
     }
 
@@ -96,6 +102,7 @@ serve(async (req) => {
       .update({ 
         connected: true, 
         handle: twitterHandle,
+        followers: followersCount,
         updated_at: new Date().toISOString()
       })
       .eq("type", "twitter");

@@ -22,10 +22,10 @@ function MainApp() {
     const saved = localStorage.getItem('supabase-social-channels');
     if (saved) return JSON.parse(saved);
     return [
-      { id: '1', name: 'Twitter / X', type: 'twitter', connected: true, handle: '@contra_hq' },
-      { id: '2', name: 'LinkedIn Page', type: 'linkedin', connected: true, handle: 'Contra' },
-      { id: '3', name: 'Instagram Business', type: 'instagram', connected: false, handle: '' },
-      { id: '4', name: 'Facebook Page', type: 'facebook', connected: false, handle: '' },
+      { id: '1', name: 'Twitter / X', type: 'twitter', connected: true, handle: '@contra_hq', followers: 12400 },
+      { id: '2', name: 'LinkedIn Page', type: 'linkedin', connected: true, handle: 'Contra', followers: 8200 },
+      { id: '3', name: 'Instagram Business', type: 'instagram', connected: false, handle: '', followers: 4200 },
+      { id: '4', name: 'Facebook Page', type: 'facebook', connected: false, handle: '', followers: 5800 },
     ];
   });
 
@@ -117,10 +117,10 @@ function MainApp() {
             } else {
               // Table is empty, seed it
               const defaultChannels = [
-                { id: '1', name: 'Twitter / X', type: 'twitter', connected: true, handle: '@contra_hq' },
-                { id: '2', name: 'LinkedIn Page', type: 'linkedin', connected: true, handle: 'Contra' },
-                { id: '3', name: 'Instagram Business', type: 'instagram', connected: false, handle: '' },
-                { id: '4', name: 'Facebook Page', type: 'facebook', connected: false, handle: '' },
+                { id: '1', name: 'Twitter / X', type: 'twitter', connected: true, handle: '@contra_hq', followers: 12400 },
+                { id: '2', name: 'LinkedIn Page', type: 'linkedin', connected: true, handle: 'Contra', followers: 8200 },
+                { id: '3', name: 'Instagram Business', type: 'instagram', connected: false, handle: '', followers: 4200 },
+                { id: '4', name: 'Facebook Page', type: 'facebook', connected: false, handle: '', followers: 5800 },
               ];
               await client.from('channels').insert(defaultChannels);
               setChannels(defaultChannels);
@@ -212,17 +212,35 @@ function MainApp() {
   };
 
   const handleToggleChannel = async (id, connected, handle = '') => {
+    let followers = 0;
+    if (connected) {
+      const chan = channels.find(c => c.id === id);
+      const type = chan ? chan.type : '';
+      if (type === 'twitter') followers = 12400;
+      else if (type === 'linkedin') followers = 8200;
+      else if (type === 'instagram') followers = 4200;
+      else if (type === 'facebook') followers = 5800;
+    }
+
     if (isUsingSupabase && supabase) {
-      const { error } = await supabase.from('channels').update({ connected, handle }).eq('id', id);
+      let { error } = await supabase.from('channels').update({ connected, handle, followers }).eq('id', id);
+      
+      // Graceful fallback: if followers column doesn't exist yet, retry without it
+      if (error && error.message && error.message.includes('followers')) {
+        console.warn("Followers column not present in DB, updating without it.");
+        const fallbackRes = await supabase.from('channels').update({ connected, handle }).eq('id', id);
+        error = fallbackRes.error;
+      }
+
       if (error) {
         console.error(`Error updating channel ${id} in Supabase:`, error);
         addToast('Channel update failed', 'error', error.message);
       } else {
-        setChannels(channels.map(c => c.id === id ? { ...c, connected, handle } : c));
+        setChannels(channels.map(c => c.id === id ? { ...c, connected, handle, followers } : c));
         addToast(connected ? 'Channel linked' : 'Channel disconnected', 'success');
       }
     } else {
-      setChannels(channels.map(c => c.id === id ? { ...c, connected, handle } : c));
+      setChannels(channels.map(c => c.id === id ? { ...c, connected, handle, followers } : c));
     }
   };
 
