@@ -217,6 +217,21 @@ function MainApp() {
     }
   };
 
+  const handleEditPost = async (id, updates) => {
+    if (isUsingSupabase && supabase) {
+      const { error } = await supabase.from('posts').update(updates).eq('id', id);
+      if (error) {
+        addToast('Update failed', 'error', error.message);
+      } else {
+        setPosts(posts.map(p => p.id === id ? { ...p, ...updates } : p));
+        addToast('Post updated', 'success', 'Your changes have been saved.');
+      }
+    } else {
+      setPosts(posts.map(p => p.id === id ? { ...p, ...updates } : p));
+      addToast('Post updated', 'success', 'Changes saved locally.');
+    }
+  };
+
   const handleDeletePost = async (id) => {
     if (isUsingSupabase && supabase) {
       const { error } = await supabase.from('posts').delete().eq('id', id);
@@ -362,9 +377,11 @@ function MainApp() {
       case 'queue':
         return (
           <PostQueue 
-            posts={posts} 
+            posts={posts}
+            channels={channels}
             onDeletePost={handleDeletePost} 
-            onPublishPost={handlePublishPost} 
+            onPublishPost={handlePublishPost}
+            onEditPost={handleEditPost}
             setActiveTab={setActiveTab}
           />
         );
@@ -376,11 +393,7 @@ function MainApp() {
           />
         );
       case 'settings':
-        return (
-          <Settings 
-            onSaveCredentials={handleSaveCredentials} 
-          />
-        );
+        return <Settings />;
       default:
         return <div>Tab not found</div>;
     }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Home, 
   Calendar, 
@@ -6,11 +6,27 @@ import {
   Share2, 
   Settings, 
   ChevronLeft, 
-  ChevronRight 
+  ChevronRight,
+  Menu,
+  X
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Close mobile drawer on tab change
+  const handleTabChange = (id) => {
+    setActiveTab(id);
+    setMobileOpen(false);
+  };
+
+  // Close on Escape key
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') setMobileOpen(false); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
@@ -20,34 +36,33 @@ export default function Sidebar({ activeTab, setActiveTab }) {
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
-  return (
-    <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+  const navContent = (
+    <>
       {/* Brand Header */}
       <div className="sidebar-brand">
         <div className="sidebar-logo">
-          {/* Contra "C" lettermark */}
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
+          <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <rect width="24" height="24" rx="6" fill="var(--primary-green)" />
             <text
-              x="12"
-              y="17.5"
+              x="12" y="17.5"
               fontFamily="'Inter', 'Helvetica Neue', Arial, sans-serif"
-              fontSize="15"
-              fontWeight="700"
-              fill="#000000"
-              textAnchor="middle"
+              fontSize="15" fontWeight="700" fill="#000000" textAnchor="middle"
             >C</text>
           </svg>
         </div>
         <span className="sidebar-brand-name">Contra</span>
+
+        {/* Close button — mobile only */}
+        <button
+          className="sidebar-mobile-close"
+          onClick={() => setMobileOpen(false)}
+          aria-label="Close menu"
+        >
+          <X size={18} />
+        </button>
       </div>
 
-      {/* Sidebar Navigation Menu */}
+      {/* Nav Menu */}
       <nav className="sidebar-menu">
         {menuItems.map((item) => {
           const Icon = item.icon;
@@ -55,7 +70,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           return (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => handleTabChange(item.id)}
               className={`sidebar-menu-item ${isActive ? 'active' : ''}`}
               title={isCollapsed ? item.label : undefined}
             >
@@ -66,16 +81,47 @@ export default function Sidebar({ activeTab, setActiveTab }) {
         })}
       </nav>
 
-      {/* Sidebar Collapse Toggle */}
+      {/* Collapse toggle — desktop only */}
       <div className="sidebar-footer">
-        <button 
-          onClick={() => setIsCollapsed(!isCollapsed)} 
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
           className="sidebar-collapse-btn"
-          title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
         >
           {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* ── Desktop sidebar ──────────────────────────────────────────────────── */}
+      <aside className={`sidebar sidebar-desktop ${isCollapsed ? 'collapsed' : ''}`}>
+        {navContent}
+      </aside>
+
+      {/* ── Mobile hamburger button (in header bar via portal-free approach) ── */}
+      <button
+        className="sidebar-hamburger"
+        onClick={() => setMobileOpen(true)}
+        aria-label="Open menu"
+      >
+        <Menu size={20} />
+      </button>
+
+      {/* ── Mobile drawer backdrop ────────────────────────────────────────────── */}
+      {mobileOpen && (
+        <div
+          className="sidebar-backdrop"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* ── Mobile drawer ─────────────────────────────────────────────────────── */}
+      <aside className={`sidebar sidebar-mobile ${mobileOpen ? 'open' : ''}`}>
+        {navContent}
+      </aside>
+    </>
   );
 }

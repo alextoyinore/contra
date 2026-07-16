@@ -80,7 +80,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.2s ease, color 0.2s ease;
-  overflow: hidden; /* Main window scroll managed inside container */
+  overflow: hidden;
 }
 
 input, button, select, textarea {
@@ -119,8 +119,8 @@ code, pre {
   background-color: var(--bg-base);
 }
 
-/* Sidebar Styles */
-.sidebar {
+/* Desktop sidebar */
+.sidebar-desktop {
   width: 240px;
   height: 100%;
   background-color: var(--bg-sidebar);
@@ -132,8 +132,82 @@ code, pre {
   position: relative;
 }
 
-.sidebar.collapsed {
+.sidebar-desktop.collapsed {
   width: 64px;
+}
+
+/* Mobile sidebar */
+.sidebar-mobile {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 260px;
+  background-color: var(--bg-sidebar);
+  border-right: 1px solid var(--border-color);
+  flex-direction: column;
+  z-index: 200;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+}
+
+.sidebar-mobile.open {
+  transform: translateX(0);
+}
+
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 199;
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.2s ease;
+}
+
+/* Hamburger — hidden on desktop */
+.sidebar-hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-panel);
+  color: var(--text-main);
+  cursor: pointer;
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  transition: background 0.15s ease;
+}
+
+.sidebar-hamburger:hover {
+  background: var(--bg-panel-hover);
+}
+
+/* Mobile close button inside sidebar — hidden on desktop */
+.sidebar-mobile-close {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sidebar-mobile-close:hover {
+  background: var(--bg-panel-hover);
+  color: var(--text-main);
 }
 
 .sidebar-brand {
@@ -145,6 +219,7 @@ code, pre {
   border-bottom: 1px solid var(--border-color);
   overflow: hidden;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .sidebar-logo {
@@ -161,11 +236,19 @@ code, pre {
   letter-spacing: -0.015em;
   color: var(--text-main);
   transition: opacity 0.15s ease;
+  flex: 1;
+  min-width: 0;
 }
 
-.sidebar.collapsed .sidebar-brand-name {
+.sidebar-desktop.collapsed .sidebar-brand-name,
+.sidebar-desktop.collapsed .sidebar-menu-label {
   opacity: 0;
   pointer-events: none;
+}
+
+.sidebar-desktop.collapsed .sidebar-menu-label {
+  position: absolute;
+  left: -9999px;
 }
 
 .sidebar-menu {
@@ -211,11 +294,9 @@ code, pre {
   white-space: nowrap;
 }
 
-.sidebar.collapsed .sidebar-menu-label {
-  opacity: 0;
-  pointer-events: none;
-  position: absolute;
-  left: -9999px;
+.sidebar-desktop.collapsed .sidebar-menu-item {
+  justify-content: center;
+  padding: 8px;
 }
 
 .sidebar-footer {
@@ -477,9 +558,68 @@ code, pre {
   gap: 16px;
 }
 
+@media (max-width: 960px) {
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ─── Tablet (≤ 768px) ─────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .grid-cols-2, .grid-cols-3, .grid-cols-4 {
-    grid-template-columns: 1fr;
+  body { overflow: auto; }
+
+  /* Show hamburger, hide desktop sidebar */
+  .sidebar-desktop    { display: none; }
+  .sidebar-hamburger  { display: flex; }
+  .sidebar-mobile     { display: flex; }
+  .sidebar-backdrop   { display: block; }
+  .sidebar-mobile-close { display: flex; }
+
+  /* Content area takes full width */
+  .main-content { width: 100%; }
+
+  /* Pad top of content body so hamburger doesn't overlap */
+  .content-body { padding: 12px; padding-top: 56px; }
+
+  /* Header bar: show hamburger space on left */
+  .header-bar { padding-left: 52px; }
+
+  /* All grids collapse to 1 col */
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4 { grid-template-columns: 1fr; }
+
+  /* Stat cards: 2-column grid */
+  .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
+
+  /* Scheduler: stack panels */
+  .scheduler-grid { grid-template-columns: 1fr !important; }
+
+  /* Tables: horizontal scroll */
+  .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* App height */
+  .app-container { height: auto; min-height: 100svh; overflow: auto; }
+}
+
+/* ─── Small mobile (≤ 480px) ───────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .grid-cols-4 { grid-template-columns: 1fr; }
+
+  .stat-value { font-size: 20px; }
+
+  .page-title { font-size: 17px; }
+
+  .content-body { padding: 8px; padding-top: 52px; }
+
+  .btn { font-size: 12px; padding: 5px 10px; }
+
+  /* Stack header actions below breadcrumb */
+  .header-bar {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 8px 8px 8px 52px;
+    gap: 6px;
   }
 }
 
@@ -803,6 +943,17 @@ input:checked + .switch-slider:before {
 .text-right { text-align: right; }
 .text-center { text-align: center; }
 .pointer { cursor: pointer; }
+
+/* ─── Modal animations ──────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 /* ─── Spinner animation ─────────────────────────────────────── */
 @keyframes spin {
