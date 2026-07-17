@@ -7,13 +7,11 @@ import {
   Settings, 
   ChevronLeft, 
   ChevronRight,
-  Menu,
   X
 } from 'lucide-react';
 
-export default function Sidebar({ activeTab, setActiveTab }) {
+export default function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   // Close mobile drawer on tab change
   const handleTabChange = (id) => {
@@ -100,15 +98,6 @@ export default function Sidebar({ activeTab, setActiveTab }) {
       <aside className={`sidebar sidebar-desktop ${isCollapsed ? 'collapsed' : ''}`}>
         {navContent}
       </aside>
-
-      {/* ── Mobile hamburger button (in header bar via portal-free approach) ── */}
-      <button
-        className="sidebar-hamburger"
-        onClick={() => setMobileOpen(true)}
-        aria-label="Open menu"
-      >
-        <Menu size={20} />
-      </button>
 
       {/* ── Mobile drawer backdrop ────────────────────────────────────────────── */}
       {mobileOpen && (

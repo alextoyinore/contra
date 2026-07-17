@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Calendar, 
-  CheckCircle, 
-  Users, 
-  ArrowUpRight, 
-  Plus, 
-  Link, 
+import {
+  Calendar,
+  CheckCircle,
+  Users,
+  ArrowUpRight,
+  Plus,
+  Link,
   TrendingUp,
   Clock,
   Image as ImageIcon
@@ -197,7 +197,7 @@ function ImpressionsChart({ posts }) {
               d={schedLinePath}
               fill="none"
               stroke="#6366f1"
-              strokeWidth="1.5"
+              strokeWidth="1"
               strokeDasharray="5 3"
               strokeLinecap="round"
             />
@@ -213,7 +213,7 @@ function ImpressionsChart({ posts }) {
             d={linePath}
             fill="none"
             stroke="var(--primary-green)"
-            strokeWidth="2.5"
+            strokeWidth="1"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
@@ -350,10 +350,10 @@ export default function DashboardOverview({ posts, channels, setActiveTab }) {
 
   const getDefaultFollowers = (type) => {
     switch (type) {
-      case 'twitter': return 12400;
-      case 'linkedin': return 8200;
-      case 'instagram': return 4200;
-      case 'facebook': return 5800;
+      case 'twitter': return 0;
+      case 'linkedin': return 0;
+      case 'instagram': return 0;
+      case 'facebook': return 0;
       default: return 0;
     }
   };
@@ -379,11 +379,11 @@ export default function DashboardOverview({ posts, channels, setActiveTab }) {
 
   const getChannelIcon = (type) => {
     switch (type) {
-      case 'twitter':   return <Twitter size={16} className="text-secondary" />;
-      case 'linkedin':  return <Linkedin size={16} className="text-secondary" />;
+      case 'twitter': return <Twitter size={16} className="text-secondary" />;
+      case 'linkedin': return <Linkedin size={16} className="text-secondary" />;
       case 'instagram': return <Instagram size={16} className="text-secondary" />;
-      case 'facebook':  return <Facebook size={16} className="text-secondary" />;
-      default:          return <Link size={16} />;
+      case 'facebook': return <Facebook size={16} className="text-secondary" />;
+      default: return <Link size={16} />;
     }
   };
 
@@ -396,7 +396,7 @@ export default function DashboardOverview({ posts, channels, setActiveTab }) {
   return (
     <div className="content-container-tight">
       {/* Header */}
-      <div className="flex align-center justify-between">
+      <div className="page-header-row">
         <div className="page-header">
           <h1 className="page-title">Dashboard</h1>
           <p className="page-subtitle">Welcome back. Here is an overview of your social networks.</p>
@@ -460,7 +460,7 @@ export default function DashboardOverview({ posts, channels, setActiveTab }) {
       </div>
 
       {/* Charts & Channels */}
-      <div className="grid-cols-3" style={{ gridTemplateColumns: '2fr 1fr' }}>
+      <div className="dashboard-panels-grid">
         {/* Dynamic Impressions Chart */}
         <div className="panel">
           <div className="panel-header">

@@ -13,7 +13,7 @@ import {
   ChevronUp,
   X
 } from 'lucide-react';
-import { Twitter, Linkedin, Instagram, Facebook } from './SocialIcons';
+import { Twitter, Linkedin, Instagram, Facebook, Tiktok, Youtube } from './SocialIcons';
 import { useToast } from '../context/ToastContext';
 
 export default function ChannelConnections({ channels, onToggleChannel }) {
@@ -46,6 +46,10 @@ export default function ChannelConnections({ channels, onToggleChannel }) {
         return <Instagram size={size} style={{ color: '#e1306c' }} />;
       case 'facebook':
         return <Facebook size={size} style={{ color: '#1877f2' }} />;
+      case 'tiktok':
+        return <Tiktok size={size} style={{ color: '#ff0050' }} />;
+      case 'youtube':
+        return <Youtube size={size} style={{ color: '#ff0000' }} />;
       default:
         return <LinkIcon size={size} />;
     }

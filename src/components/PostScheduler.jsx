@@ -6,19 +6,39 @@ import {
   Send,
   Eye
 } from 'lucide-react';
-import { Twitter, Linkedin, Instagram, Facebook } from './SocialIcons';
+import { Twitter, Linkedin, Instagram, Facebook, Tiktok, Youtube } from './SocialIcons';
 import { useToast } from '../context/ToastContext';
 
 export default function PostScheduler({ onAddPost, channels = [] }) {
   const twitterChannel = channels.find(c => c.type === 'twitter');
   const linkedinChannel = channels.find(c => c.type === 'linkedin');
-  const twitterHandle = twitterChannel?.handle || '@yourhandle';
-  const twitterName = twitterHandle.startsWith('@') ? twitterHandle.slice(1) : twitterHandle;
-  const linkedinName = linkedinChannel?.handle || 'Your Page';
-  const twitterInitials = twitterName.slice(0, 2).toUpperCase();
-  const linkedinInitials = linkedinName.slice(0, 2).toUpperCase();
-  const twitterAvatar = twitterChannel?.avatar_url;
-  const linkedinAvatar = linkedinChannel?.avatar_url;
+  const instagramChannel = channels.find(c => c.type === 'instagram');
+  const facebookChannel = channels.find(c => c.type === 'facebook');
+  const tiktokChannel = channels.find(c => c.type === 'tiktok');
+  const youtubeChannel = channels.find(c => c.type === 'youtube');
+
+  const getChannelData = (channel, defaultHandle, defaultName) => {
+    const handle = channel?.handle || defaultHandle;
+    const name = handle.startsWith('@') ? handle.slice(1) : (channel?.name || defaultName);
+    const initials = name.slice(0, 2).toUpperCase();
+    const avatar = channel?.avatar_url;
+    return { handle, name, initials, avatar, followers: channel?.followers };
+  };
+
+  const twitter = getChannelData(twitterChannel, '@yourhandle', 'Twitter / X');
+  const linkedin = getChannelData(linkedinChannel, 'Your Page', 'LinkedIn Page');
+  const instagram = getChannelData(instagramChannel, 'instagram_hq', 'Instagram');
+  const facebook = getChannelData(facebookChannel, 'Your Page', 'Facebook Page');
+  const tiktok = getChannelData(tiktokChannel, '@tiktok_hq', 'TikTok');
+  const youtube = getChannelData(youtubeChannel, 'Your Channel', 'YouTube');
+
+  const { handle: twitterHandle, name: twitterName, initials: twitterInitials, avatar: twitterAvatar } = twitter;
+  const { handle: linkedinHandle, name: linkedinName, initials: linkedinInitials, avatar: linkedinAvatar } = linkedin;
+  const { handle: instagramHandle, name: instagramName, initials: instagramInitials, avatar: instagramAvatar } = instagram;
+  const { handle: facebookHandle, name: facebookName, initials: facebookInitials, avatar: facebookAvatar } = facebook;
+  const { handle: tiktokHandle, name: tiktokName, initials: tiktokInitials, avatar: tiktokAvatar } = tiktok;
+  const { handle: youtubeHandle, name: youtubeName, initials: youtubeInitials, avatar: youtubeAvatar } = youtube;
+
   const { addToast } = useToast();
   const [content, setContent] = useState('');
   const [selectedPlatforms, setSelectedPlatforms] = useState(['twitter']);
@@ -196,7 +216,7 @@ export default function PostScheduler({ onAddPost, channels = [] }) {
         <p className="page-subtitle">Draft and schedule posts across your active social channels.</p>
       </div>
 
-      <div className="grid-cols-2" style={{ gridTemplateColumns: '1.2fr 0.8fr' }}>
+      <div className="grid-cols-2 scheduler-grid" style={{ gridTemplateColumns: '1.2fr 0.8fr' }}>
         {/* Editor Form Panel */}
         <form onSubmit={(e) => handleSubmit(e, false)} className="panel">
           <div className="panel-header">
@@ -210,11 +230,13 @@ export default function PostScheduler({ onAddPost, channels = [] }) {
             {/* Platform Selection */}
             <div className="form-group">
               <label className="form-label">Publish to:</label>
-              <div className="flex gap-8">
+              <div className="flex gap-8" style={{ flexWrap: 'wrap' }}>
                 {channels.map((ch) => {
                   const Icon = ch.type === 'twitter' ? Twitter : 
                                ch.type === 'linkedin' ? Linkedin : 
-                               ch.type === 'instagram' ? Instagram : Facebook;
+                               ch.type === 'instagram' ? Instagram : 
+                               ch.type === 'facebook' ? Facebook : 
+                               ch.type === 'tiktok' ? Tiktok : Youtube;
                   
                   const isSelected = selectedPlatforms.includes(ch.type);
                   const isConnected = ch.connected;
@@ -497,7 +519,220 @@ export default function PostScheduler({ onAddPost, channels = [] }) {
               </div>
             )}
 
-            {previewPlatform !== 'twitter' && previewPlatform !== 'linkedin' && (
+            {previewPlatform === 'instagram' && (
+              <div 
+                style={{ 
+                  backgroundColor: 'var(--bg-panel)', 
+                  border: '1px solid var(--border-color)', 
+                  borderRadius: '12px', 
+                  padding: '0',
+                  overflow: 'hidden',
+                  width: '100%',
+                  maxWidth: '340px'
+                }}
+              >
+                {/* Header */}
+                <div className="flex gap-8 align-center" style={{ padding: '12px', borderBottom: '1px solid var(--border-color)' }}>
+                  {instagramAvatar ? (
+                    <img 
+                      src={instagramAvatar} 
+                      alt={instagramName} 
+                      style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }} 
+                    />
+                  ) : (
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--primary-green-light)', border: '1px solid var(--primary-green)', display: 'grid', placeContent: 'center', fontWeight: 'bold', fontSize: '11px', color: 'var(--text-green)' }}>
+                      {instagramInitials}
+                    </div>
+                  )}
+                  <span style={{ fontWeight: 600, fontSize: '13px' }}>{instagramHandle}</span>
+                </div>
+                {/* Image / Content Frame */}
+                <div style={{ aspectRatio: '1/1', backgroundColor: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                  {imageUrl ? (
+                    <img src={imageUrl} alt="Instagram Feed Image" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{ color: '#666', fontSize: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                      📸 [Instagram Photo Preview]
+                    </span>
+                  )}
+                </div>
+                {/* Actions */}
+                <div className="flex gap-16" style={{ padding: '12px 12px 6px 12px', fontSize: '18px' }}>
+                  <span>❤️</span>
+                  <span>💬</span>
+                  <span>📤</span>
+                </div>
+                {/* Captions */}
+                <div style={{ padding: '0 12px 12px 12px', fontSize: '12px', lineHeight: '1.4' }}>
+                  <span style={{ fontWeight: 600, marginRight: '6px' }}>{instagramHandle}</span>
+                  <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    {content || 'Your caption will appear here...'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {previewPlatform === 'facebook' && (
+              <div 
+                style={{ 
+                  backgroundColor: 'var(--bg-panel)', 
+                  border: '1px solid var(--border-color)', 
+                  borderRadius: '8px', 
+                  padding: '16px',
+                  width: '100%',
+                  maxWidth: '340px'
+                }}
+              >
+                {/* Header Profile */}
+                <div className="flex gap-8" style={{ marginBottom: '12px' }}>
+                  {facebookAvatar ? (
+                    <img 
+                      src={facebookAvatar} 
+                      alt={facebookName} 
+                      style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }} 
+                    />
+                  ) : (
+                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'var(--primary-green-light)', border: '1px solid var(--primary-green)', display: 'grid', placeContent: 'center', fontWeight: 'bold', fontSize: '12px', color: 'var(--text-green)' }}>
+                      {facebookInitials}
+                    </div>
+                  )}
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '13px' }}>{facebookName}</div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Just now • 👥</div>
+                  </div>
+                </div>
+                {/* Post body */}
+                <div style={{ fontSize: '13px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginBottom: '12px' }}>
+                  {content || <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Your post message will appear here...</span>}
+                </div>
+                {/* Image */}
+                {imageUrl && (
+                  <div style={{ border: '1px solid var(--border-color)', margin: '0 -16px 12px -16px' }}>
+                    <img src={imageUrl} alt="Facebook Attachment" style={{ width: '100%', display: 'block' }} />
+                  </div>
+                )}
+                {/* Actions */}
+                <div className="flex justify-between" style={{ color: 'var(--text-muted)', borderTop: '1px solid var(--border-color)', paddingTop: '10px', fontSize: '12px', textAlign: 'center' }}>
+                  <span style={{ flex: 1 }}>👍 Like</span>
+                  <span style={{ flex: 1 }}>💬 Comment</span>
+                  <span style={{ flex: 1 }}>📤 Share</span>
+                </div>
+              </div>
+            )}
+
+            {previewPlatform === 'tiktok' && (
+              <div 
+                style={{ 
+                  backgroundColor: '#010101', 
+                  color: '#ffffff',
+                  border: '1px solid var(--border-color)', 
+                  borderRadius: '16px', 
+                  padding: '16px',
+                  width: '100%',
+                  maxWidth: '340px',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  aspectRatio: '9/16',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'flex-end'
+                }}
+              >
+                {/* Video / Background Image Preview */}
+                {imageUrl ? (
+                  <img src={imageUrl} alt="TikTok Video" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }} />
+                ) : (
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: '#121212', display: 'grid', placeContent: 'center', opacity: 0.7 }}>
+                    <span style={{ fontSize: '11px', color: '#666' }}>[TikTok Video Preview]</span>
+                  </div>
+                )}
+
+                {/* Sidebar overlay elements (Heart, Comment, etc.) */}
+                <div style={{ position: 'absolute', right: '12px', bottom: '100px', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', zIndex: 10 }}>
+                  <div style={{ position: 'relative', marginBottom: '8px' }}>
+                    {tiktokAvatar ? (
+                      <img src={tiktokAvatar} style={{ width: '36px', height: '36px', borderRadius: '50%', border: '2px solid #ffffff' }} />
+                    ) : (
+                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#2f2f2f', border: '2px solid #ffffff', display: 'grid', placeContent: 'center', fontSize: '11px', fontWeight: 'bold' }}>{tiktokInitials}</div>
+                    )}
+                    <span style={{ position: 'absolute', bottom: '-4px', left: '12px', backgroundColor: '#fe2c55', color: '#fff', borderRadius: '50%', width: '14px', height: '14px', fontSize: '10px', display: 'grid', placeContent: 'center', fontWeight: 'bold' }}>+</span>
+                  </div>
+                  <div className="flex flex-col align-center" style={{ gap: '2px' }}>
+                    <span style={{ fontSize: '20px' }}>❤️</span>
+                    <span style={{ fontSize: '10px', color: '#fff', fontWeight: 600 }}>0</span>
+                  </div>
+                  <div className="flex flex-col align-center" style={{ gap: '2px' }}>
+                    <span style={{ fontSize: '20px' }}>💬</span>
+                    <span style={{ fontSize: '10px', color: '#fff', fontWeight: 600 }}>0</span>
+                  </div>
+                  <div className="flex flex-col align-center" style={{ gap: '2px' }}>
+                    <span style={{ fontSize: '20px' }}>🔖</span>
+                    <span style={{ fontSize: '10px', color: '#fff', fontWeight: 600 }}>0</span>
+                  </div>
+                </div>
+
+                {/* Bottom Overlay Content */}
+                <div style={{ zIndex: 10, textShadow: '1px 1px 3px rgba(0,0,0,0.8)' }}>
+                  <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '6px' }}>{tiktokHandle}</div>
+                  <div style={{ fontSize: '12px', maxHeight: '60px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', marginBottom: '8px' }}>
+                    {content || 'Your video description goes here...'}
+                  </div>
+                  <div style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.9 }}>
+                    <span>🎵</span>
+                    <marquee scrollamount="3" style={{ width: '150px' }}>original sound - {tiktokHandle}</marquee>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {previewPlatform === 'youtube' && (
+              <div 
+                style={{ 
+                  backgroundColor: 'var(--bg-panel)', 
+                  border: '1px solid var(--border-color)', 
+                  borderRadius: '12px', 
+                  padding: '0',
+                  overflow: 'hidden',
+                  width: '100%',
+                  maxWidth: '340px'
+                }}
+              >
+                {/* Video Frame */}
+                <div style={{ aspectRatio: '16/9', backgroundColor: '#000', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {imageUrl ? (
+                    <img src={imageUrl} alt="YouTube Video Thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{ color: '#666', fontSize: '12px' }}>📺 [YouTube Video Thumbnail]</span>
+                  )}
+                  <span style={{ position: 'absolute', bottom: '8px', right: '8px', backgroundColor: 'rgba(0,0,0,0.8)', color: '#fff', fontSize: '10px', padding: '2px 4px', borderRadius: '2px' }}>0:00</span>
+                </div>
+
+                {/* Channel Details */}
+                <div className="flex gap-8" style={{ padding: '12px' }}>
+                  {youtubeAvatar ? (
+                    <img 
+                      src={youtubeAvatar} 
+                      alt={youtubeName} 
+                      style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }} 
+                    />
+                  ) : (
+                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'var(--primary-green-light)', border: '1px solid var(--primary-green)', display: 'grid', placeContent: 'center', fontWeight: 'bold', fontSize: '12px', color: 'var(--text-green)' }}>
+                      {youtubeInitials}
+                    </div>
+                  )}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: '13px', lineHeight: '1.4', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                      {content || 'Your video title and description details will display here...'}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                      {youtubeName} • 0 views • Just now
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {previewPlatform !== 'twitter' && previewPlatform !== 'linkedin' && previewPlatform !== 'instagram' && previewPlatform !== 'facebook' && previewPlatform !== 'tiktok' && previewPlatform !== 'youtube' && (
               <div style={{ color: 'var(--text-secondary)', textAlign: 'center', fontSize: '12px' }}>
                 Preview not available for {previewPlatform}
               </div>

@@ -211,7 +211,7 @@ export default function PostQueue({ posts, channels = [], onDeletePost, onPublis
       )}
 
       {/* Page Header */}
-      <div className="flex align-center justify-between">
+      <div className="page-header-row">
         <div className="page-header">
           <h1 className="page-title">Posts Queue</h1>
           <p className="page-subtitle">Manage, review, and adjust your social scheduling pipeline.</p>
@@ -232,7 +232,7 @@ export default function PostQueue({ posts, channels = [], onDeletePost, onPublis
           style={{ padding: '12px 16px', flexWrap: 'wrap' }}
         >
           {/* Left: Filters */}
-          <div className="flex align-center gap-12" style={{ flex: 1, minWidth: '300px' }}>
+          <div className="flex align-center gap-12" style={{ flex: 1, flexWrap: 'wrap', minWidth: 0 }}>
             <div style={{ position: 'relative', flex: 1, maxWidth: '280px' }}>
               <Search 
                 size={14} 

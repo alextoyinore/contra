@@ -8,7 +8,7 @@ import Settings from './components/Settings';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { createClient } from '@supabase/supabase-js';
-import { Database, Terminal } from 'lucide-react';
+import { Database, Terminal, Menu } from 'lucide-react';
 
 function MainApp() {
   const { addToast } = useToast();
@@ -16,17 +16,36 @@ function MainApp() {
   const [supabase, setSupabase] = useState(null);
   const [isUsingSupabase, setIsUsingSupabase] = useState(false);
   const [dbError, setDbError] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Seed default Channels
   const [channels, setChannels] = useState(() => {
     const saved = localStorage.getItem('supabase-social-channels');
-    if (saved) return JSON.parse(saved);
-    return [
+    const defaultChannels = [
       { id: '1', name: 'Twitter / X', type: 'twitter', connected: true, handle: '@contra_hq', followers: 12400, avatar_url: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=100&q=80' },
       { id: '2', name: 'LinkedIn Page', type: 'linkedin', connected: true, handle: 'Contra', followers: 8200, avatar_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=100&q=80' },
-      { id: '3', name: 'Instagram Business', type: 'instagram', connected: false, handle: '', followers: 4200, avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80' },
+      { id: '3', name: 'Instagram', type: 'instagram', connected: false, handle: '', followers: 4200, avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80' },
       { id: '4', name: 'Facebook Page', type: 'facebook', connected: false, handle: '', followers: 5800, avatar_url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&q=80' },
+      { id: '5', name: 'TikTok', type: 'tiktok', connected: false, handle: '', followers: 15600, avatar_url: 'https://images.unsplash.com/photo-1562157873-818bc0726f68?auto=format&fit=crop&w=100&q=80' },
+      { id: '6', name: 'YouTube', type: 'youtube', connected: false, handle: '', followers: 24500, avatar_url: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=100&q=80' },
     ];
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      const hasTiktok = parsed.some(c => c.type === 'tiktok');
+      const hasYoutube = parsed.some(c => c.type === 'youtube');
+      const updated = [...parsed];
+      
+      updated.forEach(c => {
+        if (c.type === 'instagram' && c.name === 'Instagram Business') {
+          c.name = 'Instagram';
+        }
+      });
+      
+      if (!hasTiktok) updated.push(defaultChannels[4]);
+      if (!hasYoutube) updated.push(defaultChannels[5]);
+      return updated;
+    }
+    return defaultChannels;
   });
 
   // Seed default Posts
@@ -112,16 +131,69 @@ function MainApp() {
           // Fetch channels
           const { data: channelsData, error: chanError } = await client.from('channels').select('*');
           if (!chanError && channelsData) {
+            const defaultChannels = [
+              { id: '1', name: 'Twitter / X', type: 'twitter', connected: true, handle: '@contra_hq', followers: 12400, avatar_url: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=100&q=80' },
+              { id: '2', name: 'LinkedIn Page', type: 'linkedin', connected: true, handle: 'Contra', followers: 8200, avatar_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=100&q=80' },
+              { id: '3', name: 'Instagram', type: 'instagram', connected: false, handle: '', followers: 4200, avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80' },
+              { id: '4', name: 'Facebook Page', type: 'facebook', connected: false, handle: '', followers: 5800, avatar_url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&q=80' },
+              { id: '5', name: 'TikTok', type: 'tiktok', connected: false, handle: '', followers: 15600, avatar_url: 'https://images.unsplash.com/photo-1562157873-818bc0726f68?auto=format&fit=crop&w=100&q=80' },
+              { id: '6', name: 'YouTube', type: 'youtube', connected: false, handle: '', followers: 24500, avatar_url: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=100&q=80' },
+            ];
+
             if (channelsData.length > 0) {
-              setChannels(channelsData);
+              const existingTypes = channelsData.map(c => c.type);
+              const missingChannels = defaultChannels.filter(dc => !existingTypes.includes(dc.type));
+              
+              if (missingChannels.length > 0) {
+                console.log("Auto-seeding missing channels in Supabase:", missingChannels);
+                // Safe attempt to insert missing channels into DB
+                try {
+                  const toInsert = missingChannels.map(mc => ({
+                    id: mc.id,
+                    name: mc.name,
+                    type: mc.type,
+                    connected: mc.connected,
+                    handle: mc.handle,
+                    followers: mc.followers,
+                    avatar_url: mc.avatar_url
+                  }));
+                  // Try with avatar_url, fallback if column missing
+                  let res = await client.from('channels').insert(toInsert);
+                  if (res.error) {
+                    // Try without avatar_url if it failed
+                    const fallbackInsert = toInsert.map(({ avatar_url, ...rest }) => rest);
+                    await client.from('channels').insert(fallbackInsert);
+                  }
+                } catch (insertErr) {
+                  console.warn("Could not insert new channels to Supabase:", insertErr.message);
+                }
+                
+                // Fetch again to merge
+                const reload = await client.from('channels').select('*');
+                if (!reload.error && reload.data) {
+                  // Ensure Instagram naming is clean
+                  const cleanedReload = reload.data.map(c => {
+                    if (c.type === 'instagram' && c.name === 'Instagram Business') {
+                      return { ...c, name: 'Instagram' };
+                    }
+                    return c;
+                  });
+                  setChannels(cleanedReload);
+                } else {
+                  setChannels([...channelsData, ...missingChannels]);
+                }
+              } else {
+                // Ensure Instagram naming is clean
+                const cleanedData = channelsData.map(c => {
+                  if (c.type === 'instagram' && c.name === 'Instagram Business') {
+                    return { ...c, name: 'Instagram' };
+                  }
+                  return c;
+                });
+                setChannels(cleanedData);
+              }
             } else {
               // Table is empty, seed it
-              const defaultChannels = [
-                { id: '1', name: 'Twitter / X', type: 'twitter', connected: true, handle: '@contra_hq', followers: 12400 },
-                { id: '2', name: 'LinkedIn Page', type: 'linkedin', connected: true, handle: 'Contra', followers: 8200 },
-                { id: '3', name: 'Instagram Business', type: 'instagram', connected: false, handle: '', followers: 4200 },
-                { id: '4', name: 'Facebook Page', type: 'facebook', connected: false, handle: '', followers: 5800 },
-              ];
               await client.from('channels').insert(defaultChannels);
               setChannels(defaultChannels);
             }
@@ -312,24 +384,30 @@ function MainApp() {
     }
   };
 
-  const handleToggleChannel = async (id, connected, handle = '') => {
+  const handleToggleChannel = async (id, connected, handle = '', customAvatarUrl = null) => {
     let followers = 0;
-    let avatar_url = null;
+    let avatar_url = customAvatarUrl;
     if (connected) {
       const chan = channels.find(c => c.id === id);
       const type = chan ? chan.type : '';
       if (type === 'twitter') {
         followers = 12400;
-        avatar_url = 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=100&q=80';
+        if (!avatar_url) avatar_url = 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=100&q=80';
       } else if (type === 'linkedin') {
         followers = 8200;
-        avatar_url = 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=100&q=80';
+        if (!avatar_url) avatar_url = 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=100&q=80';
       } else if (type === 'instagram') {
         followers = 4200;
-        avatar_url = 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80';
+        if (!avatar_url) avatar_url = 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80';
       } else if (type === 'facebook') {
         followers = 5800;
-        avatar_url = 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&q=80';
+        if (!avatar_url) avatar_url = 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&q=80';
+      } else if (type === 'tiktok') {
+        followers = 15600;
+        if (!avatar_url) avatar_url = 'https://images.unsplash.com/photo-1562157873-818bc0726f68?auto=format&fit=crop&w=100&q=80';
+      } else if (type === 'youtube') {
+        followers = 24500;
+        if (!avatar_url) avatar_url = 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=100&q=80';
       }
     }
 
@@ -434,42 +512,51 @@ function MainApp() {
   return (
     <div className="app-container">
       {/* Sidebar Navigation */}
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        mobileOpen={mobileMenuOpen}
+        setMobileOpen={setMobileMenuOpen}
+      />
 
       {/* Main Content Pane */}
       <div className="main-content">
         {/* Header Bar */}
         <header className="header-bar">
+          {/* Mobile hamburger — lives in topnav on mobile */}
+          <button
+            className="sidebar-hamburger-topnav"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Open menu"
+          >
+            <Menu size={20} />
+          </button>
+
           {getBreadcrumbs()}
 
           <div className="header-actions">
-            {/* Supabase Status indicator badge */}
-            {isUsingSupabase ? (
-              <div className="badge badge-success" style={{ gap: '6px', cursor: 'help' }} title="Supabase DB Connected">
-                <Database size={12} />
-                Supabase Online
-              </div>
-            ) : dbError ? (
+            {/* DB connection status — only show errors/demo, not "Supabase Online" */}
+            {dbError ? (
               <div
                 className="badge badge-error"
-                style={{ gap: '6px', cursor: 'pointer', maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                style={{ gap: '6px', cursor: 'pointer', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                 onClick={() => setActiveTab('settings')}
                 title={dbError}
               >
                 <Database size={12} />
-                DB Error — click to fix
+                <span className="badge-text-hide-sm">DB Error</span>
               </div>
-            ) : (
-              <div 
-                className="badge badge-default" 
+            ) : !isUsingSupabase ? (
+              <div
+                className="badge badge-default"
                 style={{ gap: '6px', color: 'var(--text-secondary)', cursor: 'pointer' }}
                 onClick={() => setActiveTab('settings')}
                 title="Click to configure credentials in Settings"
               >
                 <Terminal size={12} />
-                Demo Mode
+                <span className="badge-text-hide-sm">Demo Mode</span>
               </div>
-            )}
+            ) : null}
           </div>
         </header>
 
