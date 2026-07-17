@@ -85,6 +85,13 @@ export default function ChannelConnections({ channels, onToggleChannel }) {
     const twitterClientId = import.meta.env.VITE_TWITTER_CLIENT_ID;
     const twitterRedirectUri = import.meta.env.VITE_TWITTER_REDIRECT_URI;
 
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    const googleRedirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
+
+    const tiktokClientKey = import.meta.env.VITE_TIKTOK_CLIENT_KEY;
+    const tiktokRedirectUri = import.meta.env.VITE_TIKTOK_REDIRECT_URI;
+
+    // Real Twitter OAuth redirection
     if (authModal.type === 'twitter' && twitterClientId && twitterRedirectUri) {
       addToast('Redirecting to Twitter...', 'info', 'Handing off to Twitter authentication service');
       
@@ -100,6 +107,39 @@ export default function ChannelConnections({ channels, onToggleChannel }) {
       window.location.href = authUrl.toString();
       return;
     }
+
+    // Real YouTube (Google) OAuth redirection
+    if (authModal.type === 'youtube' && googleClientId && googleRedirectUri) {
+      addToast('Redirecting to Google...', 'info', 'Handing off to Google authorization service');
+
+      const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+      authUrl.searchParams.append("client_id", googleClientId);
+      authUrl.searchParams.append("redirect_uri", googleRedirectUri);
+      authUrl.searchParams.append("response_type", "code");
+      authUrl.searchParams.append("scope", "https://www.googleapis.com/auth/youtube.upload openid profile");
+      authUrl.searchParams.append("access_type", "offline");
+      authUrl.searchParams.append("prompt", "consent");
+      authUrl.searchParams.append("state", "contra_youtube");
+
+      window.location.href = authUrl.toString();
+      return;
+    }
+
+    // Real TikTok OAuth redirection
+    if (authModal.type === 'tiktok' && tiktokClientKey && tiktokRedirectUri) {
+      addToast('Redirecting to TikTok...', 'info', 'Handing off to TikTok authorization service');
+
+      const authUrl = new URL("https://www.tiktok.com/v2/auth/authorize/");
+      authUrl.searchParams.append("client_key", tiktokClientKey);
+      authUrl.searchParams.append("redirect_uri", tiktokRedirectUri);
+      authUrl.searchParams.append("response_type", "code");
+      authUrl.searchParams.append("scope", "video.publish user.info.basic");
+      authUrl.searchParams.append("state", "contra_tiktok");
+
+      window.location.href = authUrl.toString();
+      return;
+    }
+
 
     // Fall back to simulation
     setOauthStep(1);

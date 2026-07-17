@@ -7,7 +7,8 @@ import {
   Settings, 
   ChevronLeft, 
   ChevronRight,
-  X
+  X,
+  HelpCircle
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
@@ -32,6 +33,7 @@ export default function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobile
     { id: 'queue', label: 'Posts Queue', icon: Table },
     { id: 'channels', label: 'Channels', icon: Share2 },
     { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'resources', label: 'Resources', icon: HelpCircle },
   ];
 
   const navContent = (

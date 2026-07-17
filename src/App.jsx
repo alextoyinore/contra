@@ -5,6 +5,7 @@ import PostScheduler from './components/PostScheduler';
 import PostQueue from './components/PostQueue';
 import ChannelConnections from './components/ChannelConnections';
 import Settings from './components/Settings';
+import Resources from './components/Resources';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { createClient } from '@supabase/supabase-js';
@@ -230,7 +231,7 @@ function MainApp() {
     // Check for successful OAuth connection redirect query param
     const params = new URLSearchParams(window.location.search);
     if (params.get('auth') === 'success') {
-      addToast('Channel connected!', 'success', 'Your Twitter account has been authorized and linked successfully.');
+      addToast('Channel connected!', 'success', 'Your social account has been authorized and linked successfully.');
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
@@ -248,12 +249,18 @@ function MainApp() {
         const savedPost = data[0];
         setPosts([savedPost, ...posts]);
 
-        // If the user clicked "Publish Now" and Twitter is connected, call the Edge Function
-        const isTwitterPost = savedPost.platforms && savedPost.platforms.includes('twitter');
-        const twitterConnected = channels.find(c => c.type === 'twitter')?.connected;
+        // If the user clicked "Publish Now" and any of the targeted platforms are connected, call the Edge Function
+        const targetedPlatforms = savedPost.platforms || [];
+        const needsEdgeFunction = targetedPlatforms.some(plat => {
+          const isSupported = ['twitter', 'youtube', 'tiktok'].includes(plat);
+          const isConnected = channels.find(c => c.type === plat)?.connected;
+          return isSupported && isConnected;
+        });
 
-        if (publishImmediately && isTwitterPost && twitterConnected) {
-          addToast('Publishing to Twitter...', 'info', 'Sending your post live.');
+        if (publishImmediately && needsEdgeFunction) {
+          const activePlats = targetedPlatforms.filter(plat => ['twitter', 'youtube', 'tiktok'].includes(plat) && channels.find(c => c.type === plat)?.connected);
+          const formattedPlats = activePlats.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(', ');
+          addToast(`Publishing to ${formattedPlats}...`, 'info', 'Sending secure request to Edge Function.');
           try {
             const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || localStorage.getItem('supabase-url');
             const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || localStorage.getItem('supabase-key');
@@ -272,7 +279,7 @@ function MainApp() {
             if (!res.ok || result.error) throw new Error(result.error || 'Publishing failed');
 
             setPosts(prev => prev.map(p => p.id === savedPost.id ? { ...p, status: 'published' } : p));
-            addToast('Post published! 🎉', 'success', 'Your tweet is now live on Twitter.');
+            addToast('Published successfully! 🎉', 'success', `Your post is now live on ${formattedPlats}.`);
           } catch (err) {
             console.error('Publish post error:', err);
             addToast('Saved but publish failed', 'error', err.message);
@@ -322,11 +329,18 @@ function MainApp() {
   const handlePublishPost = async (id) => {
     const nowStr = new Date().toISOString();
     const post = posts.find(p => p.id === id);
-    const isTwitterPost = post && post.platforms && post.platforms.includes('twitter');
-    const twitterConnected = channels.find(c => c.type === 'twitter')?.connected;
+    if (!post) return;
 
+    const targetedPlatforms = post.platforms || [];
+    const needsEdgeFunction = targetedPlatforms.some(plat => {
+      const isSupported = ['twitter', 'youtube', 'tiktok'].includes(plat);
+      const isConnected = channels.find(c => c.type === plat)?.connected;
+      return isSupported && isConnected;
+    });
 
-    if (post.platforms.includes('twitter')) {
+    if (needsEdgeFunction) {
+      const activePlats = targetedPlatforms.filter(plat => ['twitter', 'youtube', 'tiktok'].includes(plat) && channels.find(c => c.type === plat)?.connected);
+      const formattedPlats = activePlats.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(', ');
       try {
         const funcUrl = import.meta.env.VITE_SUPABASE_URL 
           ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/publish-post`
@@ -336,18 +350,21 @@ function MainApp() {
           throw new Error('Supabase function URL not configured');
         }
 
-        addToast('Publishing to Twitter...', 'info', 'Sending secure request to Edge Function');
+        addToast(`Publishing to ${formattedPlats}...`, 'info', 'Sending secure request to Edge Function');
 
-        // If it was a composer submit, we might not have saved it to DB yet
-        if (isUsingSupabase && supabase && postObject) {
-          await supabase.from('posts').insert([{
+        // Ensure post exists in db if using supabase
+        if (isUsingSupabase && supabase) {
+          const { error: upsertErr } = await supabase.from('posts').upsert([{
             id: post.id,
             content: post.content,
             platforms: post.platforms,
             media_url: post.media_url,
-            status: 'scheduled', // temporary
+            status: post.status || 'scheduled',
             scheduled_at: post.scheduled_at
           }]);
+          if (upsertErr) {
+            console.warn("Failed to pre-upsert post to DB:", upsertErr.message);
+          }
         }
 
         const res = await fetch(funcUrl, {
@@ -364,7 +381,7 @@ function MainApp() {
         if (!res.ok || result.error) throw new Error(result.error || 'Publishing failed');
 
         setPosts(posts.map(p => p.id === id ? { ...p, status: 'published', scheduled_at: nowStr } : p));
-        addToast('Post published! 🎉', 'success', 'Your tweet is now live on Twitter.');
+        addToast('Published successfully! 🎉', 'success', `Your post is now live on ${formattedPlats}.`);
       } catch (err) {
         console.error('Publish post error:', err);
         addToast('Publish failed', 'error', err.message);
@@ -454,6 +471,7 @@ function MainApp() {
       if (tab === 'queue') return 'Posts Queue';
       if (tab === 'channels') return 'Channels';
       if (tab === 'settings') return 'Settings';
+      if (tab === 'resources') return 'Resources';
       return tab;
     };
     
@@ -503,7 +521,9 @@ function MainApp() {
           />
         );
       case 'settings':
-        return <Settings />;
+        return <Settings setActiveTab={setActiveTab} />;
+      case 'resources':
+        return <Resources />;
       default:
         return <div>Tab not found</div>;
     }
