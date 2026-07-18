@@ -6,6 +6,10 @@ import PostQueue from './components/PostQueue';
 import ChannelConnections from './components/ChannelConnections';
 import Settings from './components/Settings';
 import Resources from './components/Resources';
+import About from './components/About';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
+import CookiePolicy from './components/CookiePolicy';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { createClient } from '@supabase/supabase-js';
@@ -13,7 +17,78 @@ import { Database, Terminal, Menu } from 'lucide-react';
 
 function MainApp() {
   const { addToast } = useToast();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const getTabFromPath = () => {
+    const path = window.location.pathname.replace(/^\//, '');
+    if (!path) return 'dashboard';
+    return path;
+  };
+
+  const [activeTab, setActiveTabState] = useState(getTabFromPath());
+
+  const setActiveTab = (tab) => {
+    const path = `/${tab}`;
+    if (window.location.pathname !== path) {
+      window.history.pushState(null, '', path);
+    }
+    setActiveTabState(tab);
+  };
+
+  // Listen to popstate for browser Back/Forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      setActiveTabState(getTabFromPath());
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Redirect root URL to /dashboard
+  useEffect(() => {
+    if (window.location.pathname === '/' || window.location.pathname === '') {
+      window.history.replaceState(null, '', '/dashboard');
+    }
+  }, []);
+
+  // Update SEO metadata and document title based on the active tab/route
+  useEffect(() => {
+    const metaDescriptions = {
+      dashboard: "View social channel connections, audience impressions, and active posting queue metrics.",
+      scheduler: "Schedule new posts with media and customize configurations for multiple social networks.",
+      queue: "Manage your queue of scheduled, drafted, and published social media posts.",
+      channels: "Connect, authenticate, and configure your Twitter, LinkedIn, TikTok, and YouTube channels.",
+      settings: "Customize your workspace preferences, interface color schemes, and system settings.",
+      about: "Learn more about the Contra social media management workspace project.",
+      privacy: "Review how Contra securely handles and encrypts platform authorization tokens.",
+      terms: "Terms and conditions for managing and publishing social feeds.",
+      cookies: "Details on local browser storage usage for theme and session preference persistence.",
+      help: "Frequently asked questions and guides on linking channels and publishing contents."
+    };
+
+    const titles = {
+      dashboard: "Dashboard",
+      scheduler: "Scheduler",
+      queue: "Posts Queue",
+      channels: "Channels",
+      settings: "Settings",
+      about: "About Us",
+      privacy: "Privacy Policy",
+      terms: "Terms of Service",
+      cookies: "Cookie Policy",
+      help: "Help & FAQ"
+    };
+
+    const friendlyTitle = titles[activeTab] || (activeTab.charAt(0).toUpperCase() + activeTab.slice(1));
+    document.title = `${friendlyTitle} | Contra Social Hub`;
+
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      metaDesc.setAttribute('name', 'description');
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.setAttribute('content', metaDescriptions[activeTab] || "Unified social media management dashboard.");
+  }, [activeTab]);
+
   const [supabase, setSupabase] = useState(null);
   const [isUsingSupabase, setIsUsingSupabase] = useState(false);
   const [dbError, setDbError] = useState(null);
@@ -472,6 +547,10 @@ function MainApp() {
       if (tab === 'channels') return 'Channels';
       if (tab === 'settings') return 'Settings';
       if (tab === 'resources') return 'Resources';
+      if (tab === 'about') return 'About Us';
+      if (tab === 'privacy') return 'Privacy Policy';
+      if (tab === 'terms') return 'Terms of Service';
+      if (tab === 'cookies') return 'Cookie Policy';
       return tab;
     };
     
@@ -522,6 +601,14 @@ function MainApp() {
         );
       case 'settings':
         return <Settings setActiveTab={setActiveTab} />;
+      case 'about':
+        return <About />;
+      case 'privacy':
+        return <PrivacyPolicy />;
+      case 'terms':
+        return <TermsOfService />;
+      case 'cookies':
+        return <CookiePolicy />;
       case 'resources':
         return <Resources />;
       default:

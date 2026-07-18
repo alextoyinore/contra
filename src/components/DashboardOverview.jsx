@@ -10,7 +10,7 @@ import {
   Clock,
   Image as ImageIcon
 } from 'lucide-react';
-import { Twitter, Linkedin, Instagram, Facebook } from './SocialIcons';
+import { Twitter, Linkedin, Instagram, Facebook, Tiktok, Youtube } from './SocialIcons';
 
 // ─── Relative time helper ────────────────────────────────────────────────────
 function relativeTime(dateStr) {
@@ -383,6 +383,8 @@ export default function DashboardOverview({ posts, channels, setActiveTab }) {
       case 'linkedin': return <Linkedin size={16} className="text-secondary" />;
       case 'instagram': return <Instagram size={16} className="text-secondary" />;
       case 'facebook': return <Facebook size={16} className="text-secondary" />;
+      case 'tiktok': return <Tiktok size={16} className="text-secondary" />;
+      case 'youtube': return <Youtube size={16} className="text-secondary" />;
       default: return <Link size={16} />;
     }
   };
@@ -491,35 +493,51 @@ export default function DashboardOverview({ posts, channels, setActiveTab }) {
             </button>
           </div>
 
-          <div className="panel-body flex flex-col gap-12" style={{ padding: '12px 16px' }}>
-            {channels.map((ch) => (
-              <div
-                key={ch.id}
-                className="flex align-center justify-between"
-                style={{
-                  padding: '8px 0',
-                  borderBottom: '1px solid var(--border-color)',
-                  opacity: ch.connected ? 1 : 0.55
-                }}
-              >
-                <div className="flex align-center gap-8">
-                  {getChannelIcon(ch.type)}
-                  <div>
-                    <div style={{ fontWeight: 500, fontSize: '13px' }}>{ch.name}</div>
-                    {ch.connected && ch.followers > 0 && (
-                      <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                        {ch.followers.toLocaleString()} followers
-                      </div>
+          <div className="panel-body" style={{ padding: '12px 16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+              {channels.map((ch) => (
+                <div
+                  key={ch.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 10px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--bg-base)',
+                    opacity: ch.connected ? 1 : 0.55,
+                    gap: '6px',
+                    minWidth: 0
+                  }}
+                >
+                  <div className="flex align-center gap-8" style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', borderRadius: '4px', backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-color)', flexShrink: 0 }}>
+                      {getChannelIcon(ch.type)}
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontWeight: 500, fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-main)' }}>{ch.name}</div>
+                      {ch.connected && ch.followers > 0 ? (
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {formatReach(ch.followers)} reach
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          Offline
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ flexShrink: 0 }}>
+                    {ch.connected ? (
+                      <span className="badge badge-success" style={{ fontSize: '9px', padding: '1px 4px' }}>Active</span>
+                    ) : (
+                      <span className="badge badge-default" style={{ fontSize: '9px', padding: '1px 4px' }}>Off</span>
                     )}
                   </div>
                 </div>
-                {ch.connected ? (
-                  <span className="badge badge-success" style={{ fontSize: '10px' }}>Active</span>
-                ) : (
-                  <span className="badge badge-default" style={{ fontSize: '10px' }}>Offline</span>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           <div className="panel-footer" style={{ padding: '8px 16px' }}>

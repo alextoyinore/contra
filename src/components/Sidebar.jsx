@@ -7,8 +7,7 @@ import {
   Settings, 
   ChevronLeft, 
   ChevronRight,
-  X,
-  HelpCircle
+  X
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
@@ -33,7 +32,6 @@ export default function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobile
     { id: 'queue', label: 'Posts Queue', icon: Table },
     { id: 'channels', label: 'Channels', icon: Share2 },
     { id: 'settings', label: 'Settings', icon: Settings },
-    { id: 'resources', label: 'Resources', icon: HelpCircle },
   ];
 
   const navContent = (
@@ -81,8 +79,38 @@ export default function Sidebar({ activeTab, setActiveTab, mobileOpen, setMobile
         })}
       </nav>
 
+      {/* Premium Legal Footer Links */}
+      {!isCollapsed && (
+        <div className="sidebar-legal-footer">
+          <button
+            onClick={() => handleTabChange('about')}
+            className={`sidebar-legal-link ${activeTab === 'about' ? 'active' : ''}`}
+          >
+            About
+          </button>
+          <button
+            onClick={() => handleTabChange('privacy')}
+            className={`sidebar-legal-link ${activeTab === 'privacy' ? 'active' : ''}`}
+          >
+            Privacy
+          </button>
+          <button
+            onClick={() => handleTabChange('terms')}
+            className={`sidebar-legal-link ${activeTab === 'terms' ? 'active' : ''}`}
+          >
+            Terms
+          </button>
+          <button
+            onClick={() => handleTabChange('cookies')}
+            className={`sidebar-legal-link ${activeTab === 'cookies' ? 'active' : ''}`}
+          >
+            Cookies
+          </button>
+        </div>
+      )}
+
       {/* Collapse toggle — desktop only */}
-      <div className="sidebar-footer">
+      <div className="sidebar-footer" style={!isCollapsed ? { borderTop: 'none', paddingTop: 0 } : {}}>
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="sidebar-collapse-btn"
